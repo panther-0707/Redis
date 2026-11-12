@@ -1,0 +1,43 @@
+# Full demo stack: Redis + three demo backends + miniLB on http://localhost:8080
+#
+#   docker compose up --build        # start (Ctrl-C to stop)
+#   docker compose stop backend2     # watch failover: backend2 leaves rotation
+#   docker compose start backend2    # ...and comes back
+#   docker compose down              # remove everything
+
+# Every miniLB/demo_backend service uses the same image. Each one carries the
+# build instruction so that any of them can be started on its own; Docker
+# builds the image once and reuses the cached result for the others.
+x-minilb-image: &minilb-image
+  build: .
+  image: minilb:local
+
+services:
+  redis:
+    image: redis:7-alpine
+    # In-memory only: the cache and rate-limit counters need no persistence.
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  backend1:
+    <<: *minilb-image
+    entrypoint: ["demo_backend"]
+    command: ["--port", "8001", "--name", "backend-1"]
+
+  backend2:
+    <<: *minilb-image
+    entrypoint: ["demo_backend"]
+    command: ["--port", "8002", "--name", "backend-2"]
+
+  backend3:
+    <<: *minilb-image
+    entrypoint: ["demo_backend"]
+    command: ["--port", "8003", "--name", "backend-3"]
+
+  minilb:
+    <<: *minilb-image
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mounted so the config can be edited without rebuilding the image.
+      - ./config/config.docker.yaml:/etc/minilb/config.yaml:ro
+    depends_on: [redis, backend1, backend2, backend3]
