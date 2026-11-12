@@ -1,0 +1,31 @@
+# miniLB configuration used by docker-compose.
+# Same as config.yaml, except that backends and Redis are reached through
+# their docker-compose service names instead of 127.0.0.1.
+
+listen_port: 8080
+algorithm: round_robin        # round_robin | least_connections | weighted
+threads: 4
+log_level: info
+
+backends:
+  - { host: backend1, port: 8001, weight: 1 }
+  - { host: backend2, port: 8002, weight: 1 }
+  - { host: backend3, port: 8003, weight: 2 }
+
+health_check:
+  path: /health
+  interval_ms: 2000
+  fail_threshold: 3
+  success_threshold: 2
+
+rate_limit:
+  requests: 100
+  window_seconds: 60
+
+cache:
+  enabled: true
+  ttl_seconds: 30
+
+timeouts_ms: { connect: 1000, read: 5000, write: 5000 }
+
+redis: { host: redis, port: 6379 }

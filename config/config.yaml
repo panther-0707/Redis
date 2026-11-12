@@ -1,0 +1,41 @@
+# miniLB configuration.
+# Every key is optional except `backends`; the values below are the defaults
+# unless noted. Unknown keys are rejected at startup (catches typos).
+
+listen_port: 8080
+algorithm: round_robin        # round_robin | least_connections | weighted
+threads: 4                    # io_context worker threads
+log_level: info               # trace | debug | info | warn | error | off
+
+backends:
+  - { host: 127.0.0.1, port: 8001, weight: 1 }
+  - { host: 127.0.0.1, port: 8002, weight: 1 }
+  - { host: 127.0.0.1, port: 8003, weight: 2 }   # weight only matters for "weighted"
+
+health_check:
+  path: /health
+  interval_ms: 2000           # time between probe rounds
+  fail_threshold: 3           # consecutive failures before a backend is removed
+  success_threshold: 2        # consecutive successes before it is added back
+
+rate_limit:
+  requests: 100               # per client IP per window; 0 disables rate limiting
+  window_seconds: 60
+
+cache:
+  enabled: true
+  ttl_seconds: 30
+
+timeouts_ms: { connect: 1000, read: 5000, write: 5000 }
+
+redis: { host: 127.0.0.1, port: 6379 }
+
+# Further optional settings (defaults shown):
+# shutdown_grace_ms: 5000     # time in-flight requests get to finish on SIGINT/SIGTERM
+# health_check: { timeout_ms: 1000 }
+# cache:        { max_entry_bytes: 1048576 }
+# redis:        { timeout_ms: 200, threads: 4 }
+# limits:
+#   max_request_header_bytes: 16384
+#   max_request_body_bytes: 1048576
+#   max_response_bytes: 8388608

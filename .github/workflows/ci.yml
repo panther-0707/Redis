@@ -1,0 +1,115 @@
+name: CI
+
+# Runs on every pull request and on pushes to main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false   # let the other configurations finish if one fails
+      matrix:
+        include:
+          - name: Release
+            build_type: Release
+            sanitizer: ""
+          - name: ThreadSanitizer
+            build_type: RelWithDebInfo
+            sanitizer: thread
+          - name: AddressSanitizer + UBSan
+            build_type: RelWithDebInfo
+            sanitizer: address
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake g++ git \
+            libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+            redis-server
+
+      # ThreadSanitizer cannot map its shadow memory when the kernel uses very
+      # high address-space randomisation, which newer runner images do.
+      - name: Lower ASLR entropy for ThreadSanitizer
+        if: matrix.sanitizer == 'thread'
+        run: sudo sysctl vm.mmap_rnd_bits=28
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DMINILB_SANITIZER=${{ matrix.sanitizer }}
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      # The integration tests start miniLB, demo backends and a private
+      # redis-server. MINILB_REQUIRE_REDIS turns "Redis missing" from a
+      # skipped test into a failure, so CI can never silently skip them.
+      - name: Test
+        env:
+          MINILB_REQUIRE_REDIS: "1"
+        run: ctest --test-dir build --output-on-failure
+
+  docker:
+    name: Docker image + compose smoke test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker compose build
+
+      - name: Start Redis, three backends and miniLB
+        run: docker compose up -d
+
+      - name: Smoke test through the load balancer
+        run: |
+          set -euo pipefail
+          stats() { curl -fsS http://localhost:8080/stats; }
+
+          echo "Waiting for miniLB..."
+          for _ in $(seq 1 30); do stats >/dev/null 2>&1 && break; sleep 1; done
+
+          echo "--- first request: proxied to the first backend, not cached yet"
+          curl -fsS -i http://localhost:8080/ | tee first.txt
+          grep -q "X-Cache: MISS" first.txt
+          grep -q "X-Backend: backend1:8001" first.txt
+          grep -q "Hello from backend-1!" first.txt
+
+          echo "--- same request again: served from Redis"
+          sleep 1
+          curl -fsS -i http://localhost:8080/ | tee second.txt
+          grep -q "X-Cache: HIT" second.txt
+
+          echo "--- failover: stop backend2, requests must keep succeeding"
+          docker compose stop backend2
+          for n in 1 2 3 4 5 6; do curl -fsS "http://localhost:8080/?n=$n"; done
+          for _ in $(seq 1 30); do
+            stats | grep -q '"id": "backend2:8002", "healthy": false' && break; sleep 1
+          done
+          stats | grep '"id": "backend2:8002", "healthy": false'
+
+          echo "--- recovery: start backend2 again"
+          docker compose start backend2
+          for _ in $(seq 1 30); do
+            stats | grep -q '"id": "backend2:8002", "healthy": true' && break; sleep 1
+          done
+          stats | tee stats.json
+          grep -q '"id": "backend2:8002", "healthy": true' stats.json
+          grep -q '"redis_available": true' stats.json
+
+      - name: Container logs
+        if: always()
+        run: docker compose logs --no-color | tail -n 150
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down
