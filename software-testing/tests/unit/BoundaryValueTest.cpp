@@ -294,16 +294,34 @@ TEST(ParserBoundaries, ResponseStatusCodeRange) {
     }
 }
 
-// Border: the cap on a backend response whose length is declared up front.
-// A declared body of exactly the cap must not be refused.
-TEST(ParserBoundaries, DeclaredResponseBodyAtTheCapAndOneOver) {
-    HttpResponseParser atCap(100);
-    EXPECT_NE(atCap.feed("HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n"), ParseStatus::Error)
-        << "a body of exactly the cap is allowed to start";
+// Border: max_response_bytes, for a response whose length is declared. The
+// cap covers the whole response (head, blank line and body). A response of
+// exactly the cap is accepted; one byte more is refused as soon as the head
+// has been read, before any of the body is buffered.
+TEST(ParserBoundaries, DeclaredResponseOfExactlyTheCapIsAcceptedAndOneByteMoreIsRefusedEarly) {
+    const std::string head10 = "HTTP/1.1 200 OK\r\nContent-Length: 10\r\n\r\n";
+    const std::string head11 = "HTTP/1.1 200 OK\r\nContent-Length: 11\r\n\r\n";
+    ASSERT_EQ(head10.size(), head11.size());
+    const std::size_t cap = head10.size() + 10;
 
-    HttpResponseParser over(100);
-    EXPECT_EQ(over.feed("HTTP/1.1 200 OK\r\nContent-Length: 101\r\n\r\n"), ParseStatus::Error)
-        << "one byte over the cap is refused before the body arrives";
+    HttpResponseParser atCap(cap);
+    EXPECT_EQ(atCap.feed(head10), ParseStatus::NeedMore);
+    EXPECT_EQ(atCap.feed("0123456789"), ParseStatus::Complete) << "head + body is exactly the cap";
+
+    HttpResponseParser over(cap);
+    EXPECT_EQ(over.feed(head11), ParseStatus::Error) << "one byte over: refused before the body arrives";
+}
+
+// The head alone can also reach the cap: a body-less response whose head is
+// exactly the cap fits, one byte more does not.
+TEST(ParserBoundaries, ResponseHeadOfExactlyTheCapIsAccepted) {
+    const std::string response = "HTTP/1.1 204 No Content\r\nX-Pad: aaaa\r\n\r\n";
+
+    HttpResponseParser atCap(response.size());
+    EXPECT_EQ(atCap.feed(response), ParseStatus::Complete);
+
+    HttpResponseParser over(response.size() - 1);
+    EXPECT_EQ(over.feed(response), ParseStatus::Error);
 }
 
 // ================================== Cache ===================================
