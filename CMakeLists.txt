@@ -170,6 +170,7 @@ if(MINILB_BUILD_TESTS)
     software-testing/tests/unit/AssertionTest.cpp
     software-testing/tests/unit/BoundaryValueTest.cpp
     software-testing/tests/unit/CoverageGapUnitTest.cpp
+    software-testing/tests/unit/FuzzFindingsTest.cpp
     software-testing/tests/unit/HealthStateMachineTest.cpp
     software-testing/tests/unit/MutationKillTest.cpp
   )
