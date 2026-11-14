@@ -10,7 +10,9 @@
 # The fuzzer only needs the parser sources (no Boost, no Redis), so it is
 # compiled directly instead of through CMake.
 #
-# Needs: clang and its runtime (sudo apt-get install clang libclang-rt-dev).
+# Needs: clang and its fuzzing runtime
+#   sudo apt-get install clang-18 libclang-rt-18-dev
+# Another compiler binary can be chosen with FUZZ_CXX=clang++-18.
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
