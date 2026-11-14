@@ -3,6 +3,7 @@
 namespace minilb {
 
 bool Backend::recordSuccess(int successThreshold) {
+    MINILB_ASSERT(successThreshold >= 1, "the success threshold must be at least 1 (Config::validate)");
     consecutiveFailures_.store(0);
     const int successes = consecutiveSuccesses_.fetch_add(1) + 1;
     if (successes < successThreshold) {
@@ -14,6 +15,7 @@ bool Backend::recordSuccess(int successThreshold) {
 }
 
 bool Backend::recordFailure(int failThreshold) {
+    MINILB_ASSERT(failThreshold >= 1, "the failure threshold must be at least 1 (Config::validate)");
     consecutiveSuccesses_.store(0);
     const int failures = consecutiveFailures_.fetch_add(1) + 1;
     if (failures < failThreshold) {

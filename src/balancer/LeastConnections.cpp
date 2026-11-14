@@ -1,5 +1,7 @@
 #include "miniLB/balancer/LeastConnections.hpp"
 
+#include "miniLB/util/Assert.hpp"
+
 namespace minilb {
 
 Backend* LeastConnections::select(const std::vector<Backend*>& healthy, const HttpRequest&) {
@@ -20,6 +22,8 @@ Backend* LeastConnections::select(const std::vector<Backend*>& healthy, const Ht
             bestLoad = load;
         }
     }
+    MINILB_ASSERT(best != nullptr, "a non-empty healthy list always yields a backend");
+    MINILB_ASSERT(bestLoad >= 0, "the in-flight count of a backend is never negative");
     return best;
 }
 

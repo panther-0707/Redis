@@ -1,5 +1,7 @@
 #include "miniLB/http/HttpParser.hpp"
 
+#include "miniLB/util/Assert.hpp"
+
 #include <charconv>
 
 namespace minilb {
@@ -161,11 +163,15 @@ ParseStatus HttpParser::feed(std::string_view data) {
         bodyStart_ = headEnd + kHeadEnd.size();
     }
 
+    MINILB_ASSERT(bodyStart_ <= buffer_.size(), "the body starts inside the bytes received so far");
+
     // ---- Phase 2: body (Content-Length bytes) ----------------------------
     if (buffer_.size() - bodyStart_ < contentLength_) {
         return ParseStatus::NeedMore;
     }
     request_.body = buffer_.substr(bodyStart_, contentLength_);
+    MINILB_ASSERT(request_.body.size() == contentLength_,
+                  "a complete request has exactly Content-Length body bytes");
     status_ = ParseStatus::Complete;
     return status_;
 }
