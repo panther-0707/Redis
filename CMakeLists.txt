@@ -175,9 +175,26 @@ if(MINILB_BUILD_TESTS)
   )
   target_include_directories(unit_tests PRIVATE tests/unit)
   target_link_libraries(unit_tests PRIVATE minilb_lib GTest::gtest_main)
+
+  # Property-based tests need RapidCheck (apt-get install librapidcheck-dev).
+  # They are an extra: without the library everything else still builds.
+  find_package(rapidcheck QUIET)
+  if(TARGET rapidcheck AND TARGET rapidcheck_gtest)
+    message(STATUS "RapidCheck found: building the property-based tests")
+    target_sources(unit_tests PRIVATE software-testing/tests/unit/PropertyTest.cpp)
+    target_link_libraries(unit_tests PRIVATE rapidcheck rapidcheck_gtest)
+    set(MINILB_HAVE_RAPIDCHECK ON)
+  else()
+    message(STATUS "RapidCheck not found: property-based tests are not built")
+  endif()
   target_compile_definitions(unit_tests PRIVATE MINILB_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   add_test(NAME unit_tests COMMAND unit_tests)
   set_tests_properties(unit_tests PROPERTIES TIMEOUT 300)
+  if(MINILB_HAVE_RAPIDCHECK)
+    # 2000 generated cases per property instead of RapidCheck's default 100
+    # (a few seconds in total). Defect D1 needed about 2300 cases to show up.
+    set_tests_properties(unit_tests PROPERTIES ENVIRONMENT "RC_PARAMS=max_success=2000")
+  endif()
 
   # Integration tests: start the real binaries (and redis-server if installed).
   add_executable(integration_tests
