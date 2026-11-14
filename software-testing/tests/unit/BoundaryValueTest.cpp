@@ -179,20 +179,18 @@ TEST(ParserBoundaries, RequestHeadOneByteOverTheLimitIs431) {
     EXPECT_EQ(parser.errorStatus(), 431);
 }
 
-// DEFECT FOUND BY THIS TEST (still open, hence DISABLED_):
+// DEFECT D1, FOUND BY THIS TEST (see software-testing/docs/03-test-results.md):
 //
 // Requirement F14 says the parser gives the same answer however TCP splits
-// the bytes. At this border it does not. A head of exactly the limit is
-// accepted when it arrives in one piece (test above), but rejected with 431
-// when a read happens to end inside the final "\r\n\r\n": at that moment the
+// the bytes. At this border it did not. A head of exactly the limit was
+// accepted when it arrived in one piece (test above), but rejected with 431
+// when a read happened to end inside the final "\r\n\r\n": at that moment the
 // buffer holds limit + 1..3 bytes and no complete terminator yet, and
-// HttpParser::feed() compares the *whole buffer* with the limit.
+// HttpParser::feed() compared the *whole buffer* with the limit.
 //
-// So the same valid request is accepted or rejected depending on packet
-// boundaries. Run it with:
-//   ./unit_tests --gtest_also_run_disabled_tests --gtest_filter='*Fragmented*'
-// Remove the DISABLED_ prefix once HttpParser.cpp is fixed.
-TEST(ParserBoundaries, DISABLED_RequestHeadOfExactlyTheLimitIsAcceptedHoweverItIsFragmented) {
+// The test was committed as DISABLED_ while the defect was open, enabled in
+// the commit before the fix (where it fails), and passes since the fix.
+TEST(ParserBoundaries, RequestHeadOfExactlyTheLimitIsAcceptedHoweverItIsFragmented) {
     const std::string wire = headOfSize(64) + "\r\n\r\n";
 
     for (std::size_t split = 1; split < wire.size(); ++split) {
@@ -203,6 +201,22 @@ TEST(ParserBoundaries, DISABLED_RequestHeadOfExactlyTheLimitIsAcceptedHoweverItI
         ASSERT_EQ(parser.feed(wire.substr(0, split)), ParseStatus::NeedMore)
             << "first " << split << " of " << wire.size() << " bytes";
         EXPECT_EQ(parser.feed(wire.substr(split)), ParseStatus::Complete) << "split after byte " << split;
+    }
+}
+
+// The other side of the same border: one byte over the limit must end in 431
+// for every split point too (the fix must not make the limit more generous).
+TEST(ParserBoundaries, RequestHeadOneByteOverTheLimitIs431HoweverItIsFragmented) {
+    const std::string wire = headOfSize(65) + "\r\n\r\n";
+
+    for (std::size_t split = 1; split < wire.size(); ++split) {
+        HttpParser::Limits limits;
+        limits.maxHeaderBytes = 64;
+        HttpParser parser(limits);
+
+        parser.feed(wire.substr(0, split));
+        EXPECT_EQ(parser.feed(wire.substr(split)), ParseStatus::Error) << "split after byte " << split;
+        EXPECT_EQ(parser.errorStatus(), 431) << "split after byte " << split;
     }
 }
 
