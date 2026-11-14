@@ -34,10 +34,14 @@ mkdir -p "$BUILD_DIR/coverage"
 # could throw; they cannot be covered by tests and would drown the real ones.
 # --gcov-ignore-parse-errors: gcov can still print a negative count in rare
 # cases (GCC bug 68080); warn about it instead of aborting the report.
+# --exclude-branches-by-pattern: the failing side of a MINILB_ASSERT is by
+# definition never taken in a passing run, so it is not a branch tests could
+# or should cover.
 gcovr --root . --object-directory "$BUILD_DIR" \
       --filter 'src/' --filter 'include/' \
       --exclude-throw-branches \
       --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
+      --exclude-branches-by-pattern '.*MINILB_ASSERT.*' \
       --txt "$BUILD_DIR/coverage/lines.txt" \
       --html-details "$BUILD_DIR/coverage/index.html" \
       --xml "$BUILD_DIR/coverage/coverage.xml" \
@@ -49,6 +53,7 @@ gcovr --root . --object-directory "$BUILD_DIR" \
       --filter 'src/' --filter 'include/' \
       --exclude-throw-branches --txt-metric branch \
       --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
+      --exclude-branches-by-pattern '.*MINILB_ASSERT.*' \
       --txt "$BUILD_DIR/coverage/branches.txt" > /dev/null
 
 echo "Reports: $BUILD_DIR/coverage/{index.html,lines.txt,branches.txt,coverage.xml}"

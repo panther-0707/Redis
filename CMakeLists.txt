@@ -84,6 +84,20 @@ if(MINILB_COVERAGE)
   add_link_options(--coverage)
 endif()
 
+# ---- Assertions -----------------------------------------------------------------
+# MINILB_ASSERT (include/miniLB/util/Assert.hpp) checks internal invariants and
+# aborts when one is broken. On in every build except Release, so the
+# sanitizer, coverage and debug builds all run with the checks.
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(MINILB_ASSERTIONS_DEFAULT OFF)
+else()
+  set(MINILB_ASSERTIONS_DEFAULT ON)
+endif()
+option(MINILB_ASSERTIONS "Check internal invariants at run time" ${MINILB_ASSERTIONS_DEFAULT})
+if(MINILB_ASSERTIONS)
+  add_compile_definitions(MINILB_ASSERTIONS)
+endif()
+
 # ---- Library: everything except main() --------------------------------------
 # Keeping the code in a library lets the tests link against the same objects
 # as the real binary.
@@ -153,6 +167,7 @@ if(MINILB_BUILD_TESTS)
     tests/unit/StrategyTest.cpp
     tests/unit/ThreadPoolTest.cpp
     # Added for the Software Testing coursework (see software-testing/README.md)
+    software-testing/tests/unit/AssertionTest.cpp
     software-testing/tests/unit/BoundaryValueTest.cpp
     software-testing/tests/unit/CoverageGapUnitTest.cpp
     software-testing/tests/unit/HealthStateMachineTest.cpp
