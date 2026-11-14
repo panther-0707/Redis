@@ -29,7 +29,7 @@ background health checker removes and re-adds backends automatically, and
 - **Deadlines everywhere**: connect, read and write timeouts; request and response size caps.
 - **Observability**: `GET /stats` (JSON), one access-log line per request (spdlog).
 - **Graceful shutdown** on `SIGINT`/`SIGTERM`: in-flight requests finish first.
-- **Tested**: 156 unit tests and 71 integration tests, run under ThreadSanitizer and AddressSanitizer + UBSan in CI, with a line and branch coverage gate (see [software-testing/](software-testing/README.md)).
+- **Tested**: 158 unit tests and 71 integration tests, run under ThreadSanitizer and AddressSanitizer + UBSan in CI, with a line and branch coverage gate (see [software-testing/](software-testing/README.md)).
 
 ## Architecture
 
@@ -328,7 +328,7 @@ scripts/                   build.sh, run_demo.sh
 scripts/build.sh
 ctest --test-dir build --output-on-failure      # unit + integration tests
 
-./build/unit_tests                              # 156 tests (154 in a Release build), no network or Redis needed
+./build/unit_tests                              # 158 tests (156 in a Release build), no network or Redis needed
 ./build/integration_tests                       # 71 tests, starts real processes
 ./build/integration_tests --gtest_filter='*Failover*'
 ```
