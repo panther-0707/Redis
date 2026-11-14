@@ -150,6 +150,7 @@ if(MINILB_BUILD_TESTS)
     tests/unit/StrategyTest.cpp
     tests/unit/ThreadPoolTest.cpp
     # Added for the Software Testing coursework (see software-testing/README.md)
+    software-testing/tests/unit/BoundaryValueTest.cpp
     software-testing/tests/unit/CoverageGapUnitTest.cpp
   )
   target_include_directories(unit_tests PRIVATE tests/unit)
