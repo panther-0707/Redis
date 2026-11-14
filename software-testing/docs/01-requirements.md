@@ -30,7 +30,7 @@ Levels: **U** = unit, **I** = integration (two or more components), **S** = syst
 | F11 | `GET /stats` returns valid JSON with the counters and per-backend state. | U, S | `Metrics.*`, `MiniLbTest.StatsReportsCountersAndBackends` |
 | F12 | Unknown config keys and invalid values are rejected at start-up; exit code 0 for help, 2 for wrong usage, 1 for start-up errors. | U, S | `Config.*`, `ConfigGaps.*`, `ConfigBoundaries.*`, `MiniLbTest.HelpPrintsUsageAndExitsWithZero`, `MiniLbTest.WrongUsageExitsWithTwo`, `MiniLbTest.StartUpErrorsExitWithOneAndSayWhy`, `MiniLbTest.ExitsWithOneWhenThePortIsAlreadyTaken` |
 | F13 | On `SIGINT`/`SIGTERM` in-flight requests finish, for at most `shutdown_grace_ms`, and miniLB exits 0. | S | `MiniLbTest.GracefulShutdownLetsInFlightRequestsFinish`, `MiniLbTest.ShutdownDropsRequestsThatOutliveTheGracePeriod` |
-| F14 | The request parser accepts input in any fragmentation and rejects conflicting `Content-Length`, spaces in header names and folded header lines. | U | `HttpParser.HandlesOneByteAtATime`, `MalformedRequest.*`, `ParserBoundaries.*`. **Open defect D1** (see `03-test-results.md`): at the head-size limit the answer depends on fragmentation. |
+| F14 | The request parser accepts input in any fragmentation and rejects conflicting `Content-Length`, spaces in header names and folded header lines. | U | `HttpParser.HandlesOneByteAtATime`, `MalformedRequest.*`, `ParserBoundaries.*`. **Defect D1** was found here and fixed (see `03-test-results.md`): at the head-size limit the answer depended on fragmentation. |
 
 ### 1.2 Measurable quality attributes
 

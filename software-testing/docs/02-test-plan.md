@@ -23,7 +23,7 @@ against in the LO4 evaluation.
 |---|---|---|---|---|---|---|
 | A1 | F1 to F14 | Functional unit and system tests | U, S | GoogleTest | Every F-row has at least one passing test | done (F5b and F10 added in `RetryAndForwardingTest.cpp`) |
 | A2 | Q7 | Structural coverage, gap-driven tests | all | gcovr, `software-testing/scripts/coverage.sh` | Line >= 95%, branch >= 88%, remaining gaps listed and justified | done (`CoverageGap*Test.cpp`) |
-| A3 | F6 to F8, Q2 | Boundary-value tests | U | GoogleTest | Each boundary has tests at limit - 1, limit, limit + 1 | done (`BoundaryValueTest.cpp`); found defect D1 |
+| A3 | F6 to F8, Q2 | Boundary-value tests | U | GoogleTest | Each boundary has tests at limit - 1, limit, limit + 1 | done (`BoundaryValueTest.cpp`); found defect D1, since fixed |
 | A4 | F12 and config options | Pairwise combinatorial | S | `tools/pairwise.py` + parameterised test | All 93 value pairs covered (checked by `PairwiseTable.CoversEveryPairOfValues`) | done (`PairwiseConfigTest.cpp`, 12 of 216 combinations) |
 | A5 | F4 | Model-based (health state machine) | U | GoogleTest | All 10 transitions covered; random walks agree with the model | done (`HealthStateMachineTest.cpp`) |
 | A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | Mutation score target met; survivors explained | first run done (`04-mutation-report.md`); target and survivor triage open |
@@ -44,8 +44,8 @@ against in the LO4 evaluation.
 | | Added A2 after measuring coverage (94.3% line, 86.3% branch) and finding untested paths (host-name backends, grace-period expiry, CLI exit codes) | Coverage report | |
 | | Added tests for F5b and F10 after requirements analysis showed that nothing checked "a POST is not retried" or `X-Forwarded-For` | Requirements review | |
 | | Added A3 to A5 (boundary, pairwise, model-based) to cover what line coverage cannot show | Review of A2 results | |
-| | Boundary tests found defect D1 (head-size limit depends on fragmentation); test kept as `DISABLED_` until fixed | A3 | |
-| | Fix for D1, test-first: enable the disabled test, then change `HttpParser::feed` | D1 | one commit for the test, one for the fix |
+| | Boundary tests found defect D1 (head-size limit depends on fragmentation); test kept as `DISABLED_` until fixed | A3 | `d863640` |
+| | Fix for D1, test-first: enable the disabled test, then change `HttpParser::feed` | D1 | `1b8bf88` (test, red), `ec79b88` (fix, green) |
 | | New feature built test-first: (e.g. smooth weighted round robin) | README "Known limitations" | one commit for the failing test, one for the code |
 
 ## 4. Instrumentation (element 2.3)

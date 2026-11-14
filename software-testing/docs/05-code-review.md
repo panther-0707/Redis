@@ -43,7 +43,7 @@ Severity suggested by the reviewer: **M** = should be fixed or explicitly accept
 | R7 | `onBackendFailure` | C7 | The function does four jobs (clean-up, health marking, retry decision, error reply) and depends on a subtle order (`timedOut_` must be copied before `stopTimer()`). Hard to change safely; it is also where the remaining uncovered branches are. | L | | |
 | R8 | `onRedisResult` | C1 | A cache hit is replayed with its original `Date` header and no `Age` header, so a client cannot tell that the response is up to `ttl_seconds` old. Not promised by the README; noted for HTTP correctness. | L | | |
 | R9 | `onBackendFailure` | C1 (README "Known limitations") | Timeouts, oversized responses and unparsable responses all count as health failures. Already documented by the author; listed here because together with R2 one slow endpoint can remove a healthy backend. | L (known) | | |
-| D1 | `HttpParser::feed` (not in this file) | C1 (F14) | Found by boundary testing, not by review: see `03-test-results.md`. Listed so the review log links to it. | M | yes (test) | fix test-first |
+| D1 | `HttpParser::feed` (not in this file) | C1 (F14) | Found by boundary testing, not by review: see `03-test-results.md`. Listed so the review log links to it. | M | yes (test) | fixed test-first (`1b8bf88`, `ec79b88`) |
 
 ## 4. Checked, no issue found
 

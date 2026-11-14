@@ -65,14 +65,14 @@ python3 software-testing/tools/mutation.py run --max 70 --seed 1 --report softwa
 
 ## Results in one paragraph
 
-227 tests pass (132 before), line coverage is 97.9% (94.3% before) and branch
+229 tests pass (132 before), line coverage is 97.9% (94.3% before) and branch
 coverage 92.6% (86.3% before). The suite kills 91.1% of all 271 mutants and
 all 10 seeded faults. Two requirements that had no test now have one, and
-boundary testing found one defect that is still open (D1 in
+boundary testing found one defect, fixed test-first (D1 in
 `docs/03-test-results.md`).
 
 ## Not done yet
 
 The sections marked YOUR ANALYSIS in `docs/`, the triage of the mutation
-survivors and of the review findings, the fix for D1, and (optional) fuzzing,
+survivors and of the review findings, and (optional) fuzzing,
 property-based tests and performance tests with a target.
