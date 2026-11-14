@@ -26,11 +26,12 @@ against in the LO4 evaluation.
 | A3 | F6 to F8, Q2 | Boundary-value tests | U | GoogleTest | Each boundary has tests at limit - 1, limit, limit + 1 | done (`BoundaryValueTest.cpp`); found defect D1 |
 | A4 | F12 and config options | Pairwise combinatorial | S | `tools/pairwise.py` + parameterised test | All 93 value pairs covered (checked by `PairwiseTable.CoversEveryPairOfValues`) | done (`PairwiseConfigTest.cpp`, 12 of 216 combinations) |
 | A5 | F4 | Model-based (health state machine) | U | GoogleTest | All 10 transitions covered; random walks agree with the model | done (`HealthStateMachineTest.cpp`) |
-| A6 | Q7 | Mutation testing | U | Mull | Mutation score target met; survivors explained | to do |
+| A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | Mutation score target met; survivors explained | first run done (`04-mutation-report.md`); target and survivor triage open |
 | A7 | F14, L1 | Fuzzing | U | libFuzzer + ASan | N minutes with no crash; corpus committed | to do |
 | A8 | F1 to F3, F8 | Property-based tests | U | RapidCheck | Properties hold for 1000+ generated cases | to do |
 | A9 | Q3 | Performance with statistics | S | wrk, repeated runs | Target met with stated confidence | to do |
-| A10 | L1 to L4 | Code review | n/a | Checklist | Issues logged and triaged | to do |
+| A10 | L1 to L4 | Code review | n/a | Checklist | Issues logged and triaged | first pass logged (`05-code-review.md`); triage open |
+| A11 | all F | Seeded faults in CI | U, S | `tools/mutation.py seeded` | All 10 seeded faults make a test fail | done (CI job "Seeded faults are caught") |
 
 ## 3. How the plan evolved (element 2.1)
 
@@ -58,10 +59,11 @@ What is in the code to make failures visible, and why.
 | `X-Cache`, `X-Backend` response headers | `Connection` | which path a request took, visible to black-box tests | F6, F1 to F3 |
 | ThreadSanitizer, AddressSanitizer, UBSan builds | `CMakeLists.txt` (`MINILB_SANITIZER`) | data races, memory errors, undefined behaviour | Q4 |
 | Coverage counters | `CMakeLists.txt` (`MINILB_COVERAGE`), `software-testing/scripts/coverage.sh` | which code the tests execute | Q7 |
-| Assertions on invariants | **to add** | e.g. `activeConnections >= 0`; a lease is released exactly once; parser never leaves `Error` | F4, F14 |
+| Assertions on invariants (`MINILB_ASSERT`, on in every build except Release) | `include/miniLB/util/Assert.hpp`; 18 checks in `Connection`, `Backend`, `BackendLease`, the strategies, `RateLimiter`, `HttpParser` | A broken internal state at the moment it happens, with message, condition and location. An abort makes every integration test fail (they require exit status 0). Examples: a connection is answered exactly once; in-flight counts never go below zero; no backend is contacted after the reply; `Retry-After` is between 1 and the window length | F4, F5, F8, F14 |
 
-> **To do:** add the assertions, each in its own commit with a test that
-> would trip it if the invariant were broken.
+The assertion mechanism itself is tested in
+`software-testing/tests/unit/AssertionTest.cpp` (a broken invariant aborts
+with the right message; a Release build does not evaluate the condition).
 
 ## 5. Evaluation of the plan (element 2.2)
 
