@@ -33,6 +33,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             cmake g++ git \
             libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+            librapidcheck-dev \
             redis-server
 
       # ThreadSanitizer cannot map its shadow memory when the kernel uses very
@@ -73,6 +74,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             cmake g++ git gcovr \
             libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+            librapidcheck-dev \
             redis-server
 
       - name: Build, test and measure coverage
@@ -102,6 +104,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             cmake g++ git python3 \
             libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+            librapidcheck-dev \
             redis-server
 
       - name: Seed each fault and require a test failure
