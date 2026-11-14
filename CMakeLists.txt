@@ -163,6 +163,7 @@ if(MINILB_BUILD_TESTS)
     tests/integration/IntegrationTest.cpp
     # Added for the Software Testing coursework (see software-testing/README.md)
     software-testing/tests/integration/CoverageGapTest.cpp
+    software-testing/tests/integration/RetryAndForwardingTest.cpp
   )
   target_include_directories(integration_tests PRIVATE tests/integration)
   target_link_libraries(integration_tests PRIVATE minilb_lib GTest::gtest_main)
