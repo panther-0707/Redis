@@ -1,5 +1,6 @@
 #include "miniLB/core/Connection.hpp"
 
+#include "miniLB/util/Assert.hpp"
 #include "miniLB/util/Logger.hpp"
 
 namespace minilb {
@@ -23,7 +24,8 @@ Connection::Connection(tcp::socket client, Context context)
 }
 
 Connection::~Connection() {
-    --ctx_.metrics.activeConnections;
+    const int remaining = --ctx_.metrics.activeConnections;
+    MINILB_ASSERT(remaining >= 0, "the number of open client connections is never negative");
 }
 
 // ============================ 1. Read the request ===========================
@@ -164,6 +166,8 @@ void Connection::forwardRequest() {
 // ====================== 4. Connect and send the request =====================
 
 void Connection::connectToBackend(Backend& backend) {
+    MINILB_ASSERT(!lease_, "the previous attempt was released before a new backend is tried");
+    MINILB_ASSERT(replyStatus_ == 0, "no backend is contacted after the client has been answered");
     backend_ = &backend;
     lease_.emplace(backend);   // activeConnections +1 until the lease is reset
     ++backend.totalRequests;
@@ -225,6 +229,7 @@ void Connection::onBackendConnected(const boost::system::error_code& ec) {
 // ========================= 5. Read the response =============================
 
 void Connection::readBackendResponse() {
+    MINILB_ASSERT(responseParser_.has_value(), "a response parser exists once the request was sent");
     auto self = shared_from_this();
     backendSocket_.async_read_some(
         asio::buffer(readBuffer_),
@@ -258,6 +263,7 @@ void Connection::readBackendResponse() {
 }
 
 void Connection::onBackendFailure(const std::string& step, const std::string& detail) {
+    MINILB_ASSERT(backend_ != nullptr, "a backend failure can only be reported for a chosen backend");
     const bool timedOut = timedOut_;   // read before stopTimer() changes anything
     stopTimer();
     closeBackendSocket();
@@ -299,6 +305,8 @@ void Connection::onBackendFailure(const std::string& step, const std::string& de
 // =================== 6. Cache and answer the client ==========================
 
 void Connection::onBackendResponse() {
+    MINILB_ASSERT(backend_ != nullptr && !lease_,
+                  "the backend finished its part before its response is passed on");
     HttpResponse& response = responseParser_->response();
     removeHopByHopHeaders(response.headers);
     response.setHeader("Connection", "close");
@@ -322,6 +330,8 @@ void Connection::replyError(int status, const std::string& message) {
 }
 
 void Connection::reply(const HttpResponse& response) {
+    MINILB_ASSERT(replyStatus_ == 0, "every connection is answered exactly once");
+    MINILB_ASSERT(response.status >= 100 && response.status <= 599, "replies carry a valid HTTP status");
     if (!statsRequest_) {
         ++ctx_.metrics.totalRequests;
     }

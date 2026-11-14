@@ -70,6 +70,34 @@ endif()
 # binary must link as well.
 find_library(HIREDIS_LIBRARY hiredis REQUIRED)
 
+# ---- Coverage -----------------------------------------------------------------
+# cmake -DMINILB_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug  -> gcov instrumentation.
+# Set here, after the dependencies, so that only miniLB's own code is
+# instrumented (not the bundled redis-plus-plus).
+# See software-testing/scripts/coverage.sh.
+option(MINILB_COVERAGE "Instrument miniLB for gcov/gcovr coverage reports" OFF)
+if(MINILB_COVERAGE)
+  # -fprofile-update=atomic: miniLB is multi-threaded. With the default
+  # (non-atomic) counters two threads can lose or corrupt an update, which
+  # shows up as wrong or even negative execution counts.
+  add_compile_options(--coverage -fprofile-update=atomic -O0 -g)
+  add_link_options(--coverage)
+endif()
+
+# ---- Assertions -----------------------------------------------------------------
+# MINILB_ASSERT (include/miniLB/util/Assert.hpp) checks internal invariants and
+# aborts when one is broken. On in every build except Release, so the
+# sanitizer, coverage and debug builds all run with the checks.
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(MINILB_ASSERTIONS_DEFAULT OFF)
+else()
+  set(MINILB_ASSERTIONS_DEFAULT ON)
+endif()
+option(MINILB_ASSERTIONS "Check internal invariants at run time" ${MINILB_ASSERTIONS_DEFAULT})
+if(MINILB_ASSERTIONS)
+  add_compile_definitions(MINILB_ASSERTIONS)
+endif()
+
 # ---- Library: everything except main() --------------------------------------
 # Keeping the code in a library lets the tests link against the same objects
 # as the real binary.
@@ -138,14 +166,27 @@ if(MINILB_BUILD_TESTS)
     tests/unit/RateLimiterTest.cpp
     tests/unit/StrategyTest.cpp
     tests/unit/ThreadPoolTest.cpp
+    # Added for the Software Testing coursework (see software-testing/README.md)
+    software-testing/tests/unit/AssertionTest.cpp
+    software-testing/tests/unit/BoundaryValueTest.cpp
+    software-testing/tests/unit/CoverageGapUnitTest.cpp
+    software-testing/tests/unit/HealthStateMachineTest.cpp
   )
+  target_include_directories(unit_tests PRIVATE tests/unit)
   target_link_libraries(unit_tests PRIVATE minilb_lib GTest::gtest_main)
   target_compile_definitions(unit_tests PRIVATE MINILB_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   add_test(NAME unit_tests COMMAND unit_tests)
   set_tests_properties(unit_tests PROPERTIES TIMEOUT 300)
 
   # Integration tests: start the real binaries (and redis-server if installed).
-  add_executable(integration_tests tests/integration/IntegrationTest.cpp)
+  add_executable(integration_tests
+    tests/integration/IntegrationTest.cpp
+    # Added for the Software Testing coursework (see software-testing/README.md)
+    software-testing/tests/integration/CoverageGapTest.cpp
+    software-testing/tests/integration/PairwiseConfigTest.cpp
+    software-testing/tests/integration/RetryAndForwardingTest.cpp
+  )
+  target_include_directories(integration_tests PRIVATE tests/integration)
   target_link_libraries(integration_tests PRIVATE minilb_lib GTest::gtest_main)
   target_compile_definitions(integration_tests PRIVATE
     MINILB_BIN="$<TARGET_FILE:miniLB>"
