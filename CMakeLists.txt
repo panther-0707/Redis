@@ -152,6 +152,7 @@ if(MINILB_BUILD_TESTS)
     # Added for the Software Testing coursework (see software-testing/README.md)
     software-testing/tests/unit/BoundaryValueTest.cpp
     software-testing/tests/unit/CoverageGapUnitTest.cpp
+    software-testing/tests/unit/HealthStateMachineTest.cpp
   )
   target_include_directories(unit_tests PRIVATE tests/unit)
   target_link_libraries(unit_tests PRIVATE minilb_lib GTest::gtest_main)
