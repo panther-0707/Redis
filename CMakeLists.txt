@@ -149,14 +149,22 @@ if(MINILB_BUILD_TESTS)
     tests/unit/RateLimiterTest.cpp
     tests/unit/StrategyTest.cpp
     tests/unit/ThreadPoolTest.cpp
+    # Added for the Software Testing coursework (see software-testing/README.md)
+    software-testing/tests/unit/CoverageGapUnitTest.cpp
   )
+  target_include_directories(unit_tests PRIVATE tests/unit)
   target_link_libraries(unit_tests PRIVATE minilb_lib GTest::gtest_main)
   target_compile_definitions(unit_tests PRIVATE MINILB_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
   add_test(NAME unit_tests COMMAND unit_tests)
   set_tests_properties(unit_tests PROPERTIES TIMEOUT 300)
 
   # Integration tests: start the real binaries (and redis-server if installed).
-  add_executable(integration_tests tests/integration/IntegrationTest.cpp)
+  add_executable(integration_tests
+    tests/integration/IntegrationTest.cpp
+    # Added for the Software Testing coursework (see software-testing/README.md)
+    software-testing/tests/integration/CoverageGapTest.cpp
+  )
+  target_include_directories(integration_tests PRIVATE tests/integration)
   target_link_libraries(integration_tests PRIVATE minilb_lib GTest::gtest_main)
   target_compile_definitions(integration_tests PRIVATE
     MINILB_BIN="$<TARGET_FILE:miniLB>"
