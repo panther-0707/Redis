@@ -277,15 +277,25 @@ ParseStatus HttpResponseParser::feed(std::string_view data) {
         return status_;
     }
     buffer_.append(data);
-    if (buffer_.size() > maxBytes_) {
-        return fail("response too large");
-    }
+
+    // The size cap (maxBytes_) applies to the response itself: head, blank
+    // line and body. It must not be applied to the raw buffer, because the
+    // buffer can also hold bytes that arrived after the end of the response
+    // in the same read. Those are ignored, exactly as they are when they
+    // arrive in a later read.
 
     // ---- Phase 1: status line + headers ----------------------------------
     if (!headDone_) {
         const std::size_t headEnd = findHeadEnd(buffer_, searchFrom_);
         if (headEnd == std::string::npos) {
+            // Still inside the head, so every byte so far belongs to it.
+            if (buffer_.size() > maxBytes_) {
+                return fail("response too large");
+            }
             return ParseStatus::NeedMore;
+        }
+        if (headEnd + kHeadEnd.size() > maxBytes_) {
+            return fail("response too large");
         }
         if (!parseHead(std::string_view(buffer_).substr(0, headEnd))) {
             return status_;
@@ -296,7 +306,18 @@ ParseStatus HttpResponseParser::feed(std::string_view data) {
 
     // ---- Phase 2: body -----------------------------------------------------
     if (!hasContentLength_) {
-        return ParseStatus::NeedMore;   // body ends when the backend closes: see finish()
+        // The body ends when the backend closes (see finish()), so everything
+        // received so far is part of the response.
+        if (buffer_.size() > maxBytes_) {
+            return fail("response too large");
+        }
+        return ParseStatus::NeedMore;
+    }
+    // The length is declared, so the size of the whole response is known
+    // now: refuse it before buffering a body that cannot fit.
+    // (bodyStart_ <= maxBytes_ was checked above, so this cannot underflow.)
+    if (contentLength_ > maxBytes_ - bodyStart_) {
+        return fail("response too large");
     }
     if (buffer_.size() - bodyStart_ < contentLength_) {
         return ParseStatus::NeedMore;
@@ -374,10 +395,6 @@ bool HttpResponseParser::parseHead(std::string_view head) {
     } else {
         if (!readContentLength(response_.headers, hasContentLength_, contentLength_, error)) {
             fail(error);
-            return false;
-        }
-        if (hasContentLength_ && contentLength_ > maxBytes_) {
-            fail("response too large");
             return false;
         }
     }
