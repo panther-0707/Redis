@@ -186,6 +186,7 @@ if(MINILB_BUILD_TESTS)
     software-testing/tests/integration/CoverageGapTest.cpp
     software-testing/tests/integration/PairwiseConfigTest.cpp
     software-testing/tests/integration/RetryAndForwardingTest.cpp
+    software-testing/tests/integration/ReviewFindingsTest.cpp
   )
   target_include_directories(integration_tests PRIVATE tests/integration)
   target_link_libraries(integration_tests PRIVATE minilb_lib GTest::gtest_main)
