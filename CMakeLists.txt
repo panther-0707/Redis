@@ -70,6 +70,17 @@ endif()
 # binary must link as well.
 find_library(HIREDIS_LIBRARY hiredis REQUIRED)
 
+# ---- Coverage -----------------------------------------------------------------
+# cmake -DMINILB_COVERAGE=ON -DCMAKE_BUILD_TYPE=Debug  -> gcov instrumentation.
+# Set here, after the dependencies, so that only miniLB's own code is
+# instrumented (not the bundled redis-plus-plus).
+# See software-testing/scripts/coverage.sh.
+option(MINILB_COVERAGE "Instrument miniLB for gcov/gcovr coverage reports" OFF)
+if(MINILB_COVERAGE)
+  add_compile_options(--coverage -O0 -g)
+  add_link_options(--coverage)
+endif()
+
 # ---- Library: everything except main() --------------------------------------
 # Keeping the code in a library lets the tests link against the same objects
 # as the real binary.
