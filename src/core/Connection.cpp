@@ -307,6 +307,10 @@ void Connection::onBackendFailure(const std::string& step, const std::string& de
 void Connection::onBackendResponse() {
     MINILB_ASSERT(backend_ != nullptr && !lease_,
                   "the backend finished its part before its response is passed on");
+    // A complete response is proof that the backend is alive, whatever its
+    // status code: it ends the backend's failure streak.
+    backend_->recordRequestSuccess();
+
     HttpResponse& response = responseParser_->response();
     removeHopByHopHeaders(response.headers);
     response.setHeader("Connection", "close");

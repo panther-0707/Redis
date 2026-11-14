@@ -47,6 +47,13 @@ struct Backend {
     bool recordSuccess(int successThreshold);
     bool recordFailure(int failThreshold);
 
+    // Called by the proxy when a real request got a complete response from
+    // this backend. It ends the current failure streak, so that "N failures
+    // in a row" really means in a row: failures scattered between successful
+    // requests do not add up. It deliberately does NOT count towards
+    // recovery: an unhealthy backend is only put back by health probes.
+    void recordRequestSuccess();
+
 private:
     std::atomic<int> consecutiveSuccesses_{0};
     std::atomic<int> consecutiveFailures_{0};

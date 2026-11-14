@@ -224,6 +224,34 @@ INSTANTIATE_TEST_SUITE_P(HealthStateMachine, RandomWalk,
                                            Thresholds{3, 2},   // the shipped defaults
                                            Thresholds{5, 4}));
 
+// ---- A successful real request (review finding R2) ---------------------------
+//
+// recordRequestSuccess() is a third event. In model terms it is "Hf -> H0"
+// and "Us -> Us": it ends a failure streak but never revives a backend.
+
+TEST(HealthStateMachine, ASuccessfulRequestEndsTheFailureStreak) {
+    Backend backend("10.0.0.1", 80);
+    EXPECT_FALSE(backend.recordFailure(3));
+    EXPECT_FALSE(backend.recordFailure(3));   // H2: one more failure would remove it
+    backend.recordRequestSuccess();           // back to H0
+    EXPECT_FALSE(backend.recordFailure(3));
+    EXPECT_FALSE(backend.recordFailure(3));
+    EXPECT_TRUE(backend.healthy.load()) << "four failures, but never three in a row";
+    EXPECT_TRUE(backend.recordFailure(3)) << "the third in a row removes it";
+    EXPECT_FALSE(backend.healthy.load());
+}
+
+TEST(HealthStateMachine, ASuccessfulRequestDoesNotReviveAnUnhealthyBackend) {
+    Backend backend("10.0.0.1", 80);
+    ASSERT_TRUE(backend.recordFailure(1));
+    for (int i = 0; i < 10; ++i) {
+        backend.recordRequestSuccess();   // e.g. requests that were already in flight
+    }
+    EXPECT_FALSE(backend.healthy.load()) << "only health probes put a backend back";
+    EXPECT_FALSE(backend.recordSuccess(2)) << "and they still need the full success threshold";
+    EXPECT_TRUE(backend.recordSuccess(2));
+}
+
 // ---- The model's start state is part of the specification ------------------
 
 TEST(HealthStateMachine, BackendsStartHealthy) {
