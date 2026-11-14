@@ -77,7 +77,10 @@ find_library(HIREDIS_LIBRARY hiredis REQUIRED)
 # See software-testing/scripts/coverage.sh.
 option(MINILB_COVERAGE "Instrument miniLB for gcov/gcovr coverage reports" OFF)
 if(MINILB_COVERAGE)
-  add_compile_options(--coverage -O0 -g)
+  # -fprofile-update=atomic: miniLB is multi-threaded. With the default
+  # (non-atomic) counters two threads can lose or corrupt an update, which
+  # shows up as wrong or even negative execution counts.
+  add_compile_options(--coverage -fprofile-update=atomic -O0 -g)
   add_link_options(--coverage)
 endif()
 

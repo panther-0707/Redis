@@ -32,9 +32,12 @@ ctest --test-dir "$BUILD_DIR" --output-on-failure
 mkdir -p "$BUILD_DIR/coverage"
 # --exclude-throw-branches: GCC adds a hidden branch for every call that
 # could throw; they cannot be covered by tests and would drown the real ones.
+# --gcov-ignore-parse-errors: gcov can still print a negative count in rare
+# cases (GCC bug 68080); warn about it instead of aborting the report.
 gcovr --root . --object-directory "$BUILD_DIR" \
       --filter 'src/' --filter 'include/' \
       --exclude-throw-branches \
+      --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
       --txt "$BUILD_DIR/coverage/lines.txt" \
       --html-details "$BUILD_DIR/coverage/index.html" \
       --xml "$BUILD_DIR/coverage/coverage.xml" \
@@ -45,6 +48,7 @@ gcovr --root . --object-directory "$BUILD_DIR" \
 gcovr --root . --object-directory "$BUILD_DIR" \
       --filter 'src/' --filter 'include/' \
       --exclude-throw-branches --txt-metric branch \
+      --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
       --txt "$BUILD_DIR/coverage/branches.txt" > /dev/null
 
 echo "Reports: $BUILD_DIR/coverage/{index.html,lines.txt,branches.txt,coverage.xml}"
