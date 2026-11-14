@@ -58,6 +58,55 @@ jobs:
           MINILB_REQUIRE_REDIS: "1"
         run: ctest --test-dir build --output-on-failure
 
+  # Runs every test with gcov instrumentation and fails if line or branch
+  # coverage drops below the thresholds in software-testing/scripts/coverage.sh.
+  # The HTML report is kept as a build artifact.
+  coverage:
+    name: Coverage gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake g++ git gcovr \
+            libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+            redis-server
+
+      - name: Build, test and measure coverage
+        env:
+          MINILB_REQUIRE_REDIS: "1"
+        run: software-testing/scripts/coverage.sh
+
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build-coverage/coverage/
+
+  # Proves that the pipeline goes red when the code is wrong: ten realistic
+  # mistakes are put into the source one at a time, and the job fails unless
+  # the test suite catches every one of them.
+  seeded-faults:
+    name: Seeded faults are caught
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake g++ git python3 \
+            libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+            redis-server
+
+      - name: Seed each fault and require a test failure
+        run: python3 software-testing/tools/mutation.py seeded
+
   docker:
     name: Docker image + compose smoke test
     runs-on: ubuntu-24.04

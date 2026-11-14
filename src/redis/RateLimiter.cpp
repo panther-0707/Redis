@@ -1,5 +1,7 @@
 #include "miniLB/redis/RateLimiter.hpp"
 
+#include "miniLB/util/Assert.hpp"
+
 #include <chrono>
 
 namespace minilb {
@@ -34,6 +36,8 @@ RateLimiter::Decision RateLimiter::allow(const std::string& clientIp, std::int64
         decision.allowed = false;
         // Seconds left until the next window begins.
         decision.retryAfterSeconds = static_cast<int>((window + 1) * windowSeconds_ - nowSeconds);
+        MINILB_ASSERT(decision.retryAfterSeconds >= 1 && decision.retryAfterSeconds <= windowSeconds_,
+                      "Retry-After lies between 1 s and the window length");
     }
     return decision;
 }

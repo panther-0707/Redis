@@ -1,5 +1,7 @@
 #include "miniLB/http/HttpParser.hpp"
 
+#include "miniLB/util/Assert.hpp"
+
 #include <charconv>
 
 namespace minilb {
@@ -146,7 +148,13 @@ ParseStatus HttpParser::feed(std::string_view data) {
     if (!headDone_) {
         const std::size_t headEnd = findHeadEnd(buffer_, searchFrom_);
         if (headEnd == std::string::npos) {
-            if (buffer_.size() > limits_.maxHeaderBytes) {
+            // The limit applies to the head *without* the blank line that
+            // ends it (see the check below). While that blank line is still
+            // incomplete, up to 3 of its 4 bytes may already be in the
+            // buffer, so allow for them here. Otherwise a head of exactly
+            // the limit would be accepted in one read but rejected when a
+            // read happens to end inside the "\r\n\r\n".
+            if (buffer_.size() > limits_.maxHeaderBytes + (kHeadEnd.size() - 1)) {
                 return fail(431, "request headers too large");
             }
             return ParseStatus::NeedMore;
@@ -161,11 +169,15 @@ ParseStatus HttpParser::feed(std::string_view data) {
         bodyStart_ = headEnd + kHeadEnd.size();
     }
 
+    MINILB_ASSERT(bodyStart_ <= buffer_.size(), "the body starts inside the bytes received so far");
+
     // ---- Phase 2: body (Content-Length bytes) ----------------------------
     if (buffer_.size() - bodyStart_ < contentLength_) {
         return ParseStatus::NeedMore;
     }
     request_.body = buffer_.substr(bodyStart_, contentLength_);
+    MINILB_ASSERT(request_.body.size() == contentLength_,
+                  "a complete request has exactly Content-Length body bytes");
     status_ = ParseStatus::Complete;
     return status_;
 }

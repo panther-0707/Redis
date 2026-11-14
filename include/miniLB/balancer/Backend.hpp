@@ -1,5 +1,7 @@
 #pragma once
 
+#include "miniLB/util/Assert.hpp"
+
 #include <atomic>
 #include <cstdint>
 #include <string>
@@ -56,7 +58,10 @@ private:
 class BackendLease {
 public:
     explicit BackendLease(Backend& backend) : backend_(backend) { ++backend_.activeConnections; }
-    ~BackendLease() { --backend_.activeConnections; }
+    ~BackendLease() {
+        const int remaining = --backend_.activeConnections;
+        MINILB_ASSERT(remaining >= 0, "a backend cannot have fewer than zero requests in flight");
+    }
 
     BackendLease(const BackendLease&) = delete;
     BackendLease& operator=(const BackendLease&) = delete;
