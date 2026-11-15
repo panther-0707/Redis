@@ -201,7 +201,9 @@ def generate_mutants(path):
 class Runner:
     def __init__(self, build_dir):
         self.build_dir = ROOT / build_dir
-        self.env = dict(os.environ, MINILB_REQUIRE_REDIS="1")
+        # A fixed seed for the property-based tests, so that the same mutant
+        # gets the same verdict on every run of this tool.
+        self.env = dict(os.environ, MINILB_REQUIRE_REDIS="1", RC_PARAMS="seed=1 max_success=300")
 
     def configure(self):
         subprocess.run(["cmake", "-S", str(ROOT), "-B", str(self.build_dir), "-DCMAKE_BUILD_TYPE=Debug"],
