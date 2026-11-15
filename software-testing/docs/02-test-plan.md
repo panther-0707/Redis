@@ -26,10 +26,10 @@ against in the LO4 evaluation.
 | A3 | F6 to F8, Q2 | Boundary-value tests | U | GoogleTest | Each boundary has tests at limit - 1, limit, limit + 1 | done (`BoundaryValueTest.cpp`); found defect D1, since fixed |
 | A4 | F12 and config options | Pairwise combinatorial | S | `tools/pairwise.py` + parameterised test | All 93 value pairs covered (checked by `PairwiseTable.CoversEveryPairOfValues`) | done (`PairwiseConfigTest.cpp`, 12 of 216 combinations) |
 | A5 | F4 | Model-based (health state machine) | U | GoogleTest | All 10 transitions covered; random walks agree with the model | done (`HealthStateMachineTest.cpp`) |
-| A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | Mutation score target met; survivors explained | first run done (`04-mutation-report.md`); target and survivor triage open |
-| A7 | F14, L1 | Fuzzing | U | libFuzzer + ASan | N minutes with no crash; corpus committed | to do |
-| A8 | F1 to F3, F8 | Property-based tests | U | RapidCheck | Properties hold for 1000+ generated cases | to do |
-| A9 | Q3 | Performance with statistics | S | wrk, repeated runs | Target met with stated confidence | to do |
+| A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | Mutation score target met; survivors explained | two runs done: 91.1%, then 94.5% after new tests (`04-mutation-report.md`); target and triage of 15 survivors open |
+| A7 | F14, L1 | Fuzzing | U | libFuzzer + ASan + UBSan (`scripts/fuzz.sh`) | No crash and no broken property; seed corpus committed; 60 s in CI | done; found D2, then 2.38 million inputs clean |
+| A8 | F1 to F3, F6, F8, F14 | Property-based tests | U | RapidCheck | Properties hold for 2000 generated cases under `ctest` | done (`PropertyTest.cpp`, 10 properties) |
+| A9 | Q3 | Performance with statistics | S | wrk, `tools/perf_stats.py` | Target met with stated confidence | tool and first report done (`06-performance-report.md`); **target not set yet** |
 | A10 | L1 to L4 | Code review | n/a | Checklist | Issues logged and triaged | first pass logged (`05-code-review.md`); triage open |
 | A11 | all F | Seeded faults in CI | U, S | `tools/mutation.py seeded` | All 10 seeded faults make a test fail | done (CI job "Seeded faults are caught") |
 
@@ -46,6 +46,11 @@ against in the LO4 evaluation.
 | | Added A3 to A5 (boundary, pairwise, model-based) to cover what line coverage cannot show | Review of A2 results | |
 | | Boundary tests found defect D1 (head-size limit depends on fragmentation); test kept as `DISABLED_` until fixed | A3 | `d863640` |
 | | Fix for D1, test-first: enable the disabled test, then change `HttpParser::feed` | D1 | `1b8bf88` (test, red), `ec79b88` (fix, green) |
+| | Tests added for 9 surviving mutants from the first mutation run | `04-mutation-report-run1.md` | `3486cef` |
+| | Review finding R2 turned into a failing test, then fixed | `05-code-review.md` | `aaee16d` (red), `e3ee127` (green) |
+| | Added A8 (property-based tests); checked that they re-find D1 when its fix is removed | D1 needed an input nobody had thought of | `eeed56f` |
+| | Added A7 (fuzzing); it found D2 on its first run; test, then fix | A8 only covered the request parser | `ac5b1d4`, `4255394` (red), `f19b1c7` (green) |
+| | Added A9 (repeated benchmarks with statistics) | Q3 had single-run numbers only | `f20bd3e` |
 | | New feature built test-first: (e.g. smooth weighted round robin) | README "Known limitations" | one commit for the failing test, one for the code |
 
 ## 4. Instrumentation (element 2.3)

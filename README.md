@@ -29,7 +29,7 @@ background health checker removes and re-adds backends automatically, and
 - **Deadlines everywhere**: connect, read and write timeouts; request and response size caps.
 - **Observability**: `GET /stats` (JSON), one access-log line per request (spdlog).
 - **Graceful shutdown** on `SIGINT`/`SIGTERM`: in-flight requests finish first.
-- **Tested**: 158 unit tests and 71 integration tests, run under ThreadSanitizer and AddressSanitizer + UBSan in CI, with a line and branch coverage gate (see [software-testing/](software-testing/README.md)).
+- **Tested**: 183 unit tests and 73 integration tests, run under ThreadSanitizer and AddressSanitizer + UBSan in CI, with a line and branch coverage gate (see [software-testing/](software-testing/README.md)).
 
 ## Architecture
 
@@ -139,6 +139,7 @@ Requirements (Ubuntu 24.04 package names): a C++17 compiler, CMake ≥ 3.16 and
 ```bash
 sudo apt-get install -y cmake g++ git \
     libboost-dev libhiredis-dev libyaml-cpp-dev libspdlog-dev libgtest-dev \
+    librapidcheck-dev \
     redis-server wrk
 ```
 
@@ -319,7 +320,7 @@ tests/integration/         tests against real miniLB, backend and Redis processe
 software-testing/          requirements, test plan, results and the tests added from them
 benchmarks/                run_benchmark.sh (wrk), failover_demo.sh
 scripts/                   build.sh, run_demo.sh
-.github/workflows/ci.yml   Release, TSan, ASan+UBSan, coverage, seeded-fault and Docker jobs
+.github/workflows/ci.yml   Release, TSan, ASan+UBSan, coverage, seeded-fault, fuzzing and Docker jobs
 ```
 
 ## Testing
@@ -328,8 +329,8 @@ scripts/                   build.sh, run_demo.sh
 scripts/build.sh
 ctest --test-dir build --output-on-failure      # unit + integration tests
 
-./build/unit_tests                              # 158 tests (156 in a Release build), no network or Redis needed
-./build/integration_tests                       # 71 tests, starts real processes
+./build/unit_tests                              # 183 tests (181 in a Release build), no network or Redis needed
+./build/integration_tests                       # 73 tests, starts real processes
 ./build/integration_tests --gtest_filter='*Failover*'
 ```
 
