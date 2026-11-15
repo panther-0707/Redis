@@ -24,4 +24,8 @@ bool Backend::recordFailure(int failThreshold) {
     return healthy.exchange(false);
 }
 
+void Backend::recordRequestSuccess() {
+    consecutiveFailures_.store(0);
+}
+
 } // namespace minilb

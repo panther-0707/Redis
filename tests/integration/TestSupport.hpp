@@ -332,11 +332,17 @@ private:
     pid_t pid_ = -1;
 };
 
-// A "backend" that answers every connection with the same fixed bytes and
-// then closes it. Lets a test decide exactly what miniLB receives.
+// A "backend" that answers every connection with fixed bytes and then closes
+// it. Lets a test decide exactly what miniLB receives.
+//
+// With several replies, connection number n (counting from 0, health probes
+// included) gets replies[n % replies.size()], which scripts a backend that
+// fails in a known pattern.
 class CannedServer {
 public:
-    explicit CannedServer(std::string reply) : reply_(std::move(reply)) {
+    explicit CannedServer(std::string reply) : CannedServer(std::vector<std::string>{std::move(reply)}) {}
+
+    explicit CannedServer(std::vector<std::string> replies) : replies_(std::move(replies)) {
         listenFd_ = ::socket(AF_INET, SOCK_STREAM, 0);
         sockaddr_in address{};
         address.sin_family = AF_INET;
@@ -355,11 +361,14 @@ public:
                 }
                 char buffer[4096];
                 const ssize_t n = ::recv(client, buffer, sizeof(buffer), 0);   // read the request
+                std::size_t connection = 0;
                 {
                     std::lock_guard<std::mutex> lock(mutex_);
+                    connection = requests_.size();
                     requests_.emplace_back(buffer, n > 0 ? static_cast<std::size_t>(n) : 0);
                 }
-                (void)!::send(client, reply_.data(), reply_.size(), MSG_NOSIGNAL);
+                const std::string& reply = replies_[connection % replies_.size()];
+                (void)!::send(client, reply.data(), reply.size(), MSG_NOSIGNAL);
                 ::close(client);
             }
         });
@@ -385,7 +394,7 @@ public:
     }
 
 private:
-    const std::string reply_;
+    const std::vector<std::string> replies_;
     int listenFd_ = -1;
     int port_ = 0;
     mutable std::mutex mutex_;
