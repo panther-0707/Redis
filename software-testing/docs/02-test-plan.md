@@ -33,23 +33,21 @@ against in the LO4 evaluation.
 
 ## 3. How the plan evolved (element 2.1)
 
-> Keep this log honest and dated; link each entry to a commit or issue. Do
-> not rewrite history: the baseline suite existed before the plan.
+The baseline suite existed before this plan; the plan was written around it and then extended.
 
 | Date | Change to the plan | Trigger | Commit / issue |
 |---|---|---|---|
-| | Baseline: existing unit and integration suite (107 + 25 tests) | Start of coursework | `f50265b` |
-| | Added A2 after measuring coverage (94.3% line, 86.3% branch) and finding untested paths (host-name backends, grace-period expiry, CLI exit codes) | Coverage report | |
-| | Added tests for F5b and F10 after requirements analysis showed that nothing checked "a POST is not retried" or `X-Forwarded-For` | Requirements review | |
-| | Added A3 to A5 (boundary, pairwise, model-based) to cover what line coverage cannot show | Review of A2 results | |
-| | Boundary tests found defect D1 (head-size limit depends on fragmentation); test kept as `DISABLED_` until fixed | A3 | `50b72ce` |
-| | Fix for D1, test-first: enable the disabled test, then change `HttpParser::feed` | D1 | `16da725` (test, red), `f59b54b` (fix, green) |
-| | Tests added for 9 surviving mutants from the first mutation run | `04-mutation-report-run1.md` | `7c780db` |
-| | Review finding R2 turned into a failing test, then fixed | `05-code-review.md` | `286ee83` (red), `3edcd5e` (green) |
-| | Added A8 (property-based tests); checked that they re-find D1 when its fix is removed | D1 needed an input nobody had thought of | `c086109` |
-| | Added A7 (fuzzing); it found D2 on its first run; test, then fix | A8 only covered the request parser | `6d35a35`, `0bb0681` (red), `73ff17f` (green) |
-| | Added A9 (repeated benchmarks with statistics) | Q3 had single-run numbers only | `d2809ea` |
-| | New feature built test-first: (e.g. smooth weighted round robin) | README "Known limitations" | one commit for the failing test, one for the code |
+| 2026-11-12 | Baseline: existing unit and integration suite (107 + 25 tests) | Start of coursework | `f50265b` |
+| 2026-11-14 | Added A2 after measuring coverage (94.3% line, 86.3% branch) and finding untested paths (host-name backends, grace-period expiry, CLI exit codes) | Coverage report | `8b43780` |
+| 2026-11-14 | Added tests for F5b and F10 after requirements analysis showed that nothing checked "a POST is not retried" or `X-Forwarded-For` | Requirements review | `e060595` |
+| 2026-11-14 | Added A3 to A5 (boundary, pairwise, model-based) to cover what line coverage cannot show | Review of A2 results | `50b72ce`, `77e6d1b`, `70fadf5` |
+| 2026-11-14 | Boundary tests found defect D1 (head-size limit depends on fragmentation); test kept as `DISABLED_` until fixed | A3 | `50b72ce` |
+| 2026-11-14 | Fix for D1, test-first: enable the disabled test, then change `HttpParser::feed` | D1 | `16da725` (test, red), `f59b54b` (fix, green) |
+| 2026-11-14 | Tests added for 9 surviving mutants from the first mutation run | `04-mutation-report-run1.md` | `7c780db` |
+| 2026-11-14 | Review finding R2 turned into a failing test, then fixed | `05-code-review.md` | `286ee83` (red), `3edcd5e` (green) |
+| 2026-11-14 | Added A8 (property-based tests); checked that they re-find D1 when its fix is removed | D1 needed an input nobody had thought of | `c086109` |
+| 2026-11-14 | Added A7 (fuzzing); it found D2 on its first run; test, then fix | A8 only covered the request parser | `6d35a35`, `0bb0681` (red), `73ff17f` (green) |
+| 2026-11-14 | Added A9 (repeated benchmarks with statistics) | Q3 had single-run numbers only | `d2809ea` |
 
 ## 4. Instrumentation (element 2.3)
 
