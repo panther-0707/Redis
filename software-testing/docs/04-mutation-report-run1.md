@@ -1,6 +1,6 @@
 # Mutation testing report
 
-> This run was made on commit `db02979`, before defect D1 was fixed. The fix
+> This run was made on commit `6d596c5`, before defect D1 was fixed. The fix
 > added 6 lines to `src/http/HttpParser.cpp` at line 151, so later line
 > numbers in that file have moved, and survivor 14 sits on the changed line.
 > Re-run the command below to refresh the report.

@@ -84,12 +84,16 @@ software-testing/tools/perf_stats.py --runs 8      # needs wrk and a Release bui
 
 256 tests pass (132 before), line coverage is 97.8% (94.3% before) and branch
 coverage 93.0% (86.3% before). The suite kills 94.5% of all 275 mutants and
-all 10 seeded faults. Two requirements that had no test now have one. Three
+all 10 seeded faults (98.1% of the non-equivalent mutants, against a target of
+95%). Three backends give 3.07 times the throughput of one, against a target
+of 2.5. Two requirements that had no test now have one. Three
 faults were found and fixed test-first: D1 by boundary testing, D2 by
 fuzzing and R2 by code review (`docs/03-test-results.md`).
 
-## Not done yet
+## Known open items
 
-The sections marked YOUR ANALYSIS in `docs/`, the triage of the 15 mutation
-survivors and of the remaining review findings, and targets for the mutation
-score and for performance (requirement Q3).
+Review findings R1 (no deadline during the Redis step) and R4 to R7 are
+deferred, and five mutants survive that need fault injection or a race to
+kill (`docs/05-code-review.md`, `docs/04-mutation-report.md`). There is no
+test over a real network, no soak test and no test with two miniLB
+instances sharing one Redis (`docs/02-test-plan.md` §5).
