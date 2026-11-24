@@ -29,7 +29,7 @@ against in the LO4 evaluation.
 | A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | Mutation score target met; survivors explained | two runs done: 91.1%, then 94.5% after new tests (`04-mutation-report.md`); target and triage of 15 survivors open |
 | A7 | F14, L1 | Fuzzing | U | libFuzzer + ASan + UBSan (`scripts/fuzz.sh`) | No crash and no broken property; seed corpus committed; 60 s in CI | done; found D2, then 2.38 million inputs clean |
 | A8 | F1 to F3, F6, F8, F14 | Property-based tests | U | RapidCheck | Properties hold for 2000 generated cases under `ctest` | done (`PropertyTest.cpp`, 10 properties) |
-| A9 | Q3 | Performance with statistics | S | wrk, `tools/perf_stats.py` | Target met with stated confidence | tool and first report done (`06-performance-report.md`); **target not set yet** |
+| A9 | Q3 | Performance with statistics | S | wrk, `tools/perf_stats.py` | Target met with stated confidence | done: target "3 backends at least 2.5x one backend on `/work`" set in `01-requirements.md` §3; measured 3.07 (95% CI 3.04 to 3.08) |
 | A10 | L1 to L4 | Code review | n/a | Checklist | Issues logged and triaged | first pass logged (`05-code-review.md`); triage open |
 | A11 | all F | Seeded faults in CI | U, S | `tools/mutation.py seeded` | All 10 seeded faults make a test fail | done (CI job "Seeded faults are caught") |
 

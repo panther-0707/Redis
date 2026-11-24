@@ -46,7 +46,7 @@ that aborts does not write its coverage counters).
 | Seeded faults | `software-testing/tools/mutation.py seeded`, CI job "Seeded faults are caught" | Every seeded fault makes a test fail | Met: 10 of 10 |
 | Property-based testing | `software-testing/tests/unit/PropertyTest.cpp` (RapidCheck) | Each property holds for 2000 generated cases under `ctest` | Met: 10 properties. Checked against a known defect: with the D1 fix removed, the fragmentation property fails after 2310 cases and shrinks to "head of exactly the limit, split inside the blank line" |
 | Fuzzing | `software-testing/fuzz/http_parser_fuzz.cpp` (libFuzzer + ASan + UBSan), `scripts/fuzz.sh`, CI job (60 s) | No crash, no sanitizer report, no broken property | Found D2 within about one second on its first run. After the fix: 2.38 million inputs in 150 s, 637 coverage points, no finding |
-| Performance with statistics | `software-testing/tools/perf_stats.py`, `06-performance-report.md` | **Target: yours to set and justify** (requirement Q3) | 8 runs: three backends give 3.07 times the throughput of one (95% CI 3.04 to 3.08); cache on is 1.16 times cache off (1.13 to 1.20); both p = 0.0002 (exact Mann-Whitney) |
+| Performance with statistics | `software-testing/tools/perf_stats.py`, `06-performance-report.md` | Target (Q3, reason in `01-requirements.md` §3): three backends give at least 2.5 times the throughput of one on `/work` | Met. 8 runs: three backends give 3.07 times the throughput of one (95% CI 3.04 to 3.08); cache on is 1.16 times cache off (1.13 to 1.20); both p = 0.0002 (exact Mann-Whitney) |
 
 ## 3. Defects found (yield)
 
