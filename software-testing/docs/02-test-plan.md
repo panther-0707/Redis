@@ -1,16 +1,14 @@
 # miniLB: test plan (LO2)
 
-> Skeleton. Requirement IDs refer to `01-requirements.md`. Sections marked
-> **YOUR ANALYSIS** need your own reasoning. Delete these quote blocks when
-> you are done.
+Requirement IDs refer to `01-requirements.md`.
 
 ## 1. Scope and priorities
 
 | Priority | Requirements | Reason |
 |---|---|---|
-| High | (e.g. L1, Q4, F5, F9) | **YOUR ANALYSIS:** impact if wrong x chance of being wrong |
-| Medium | | |
-| Low | | |
+| High | L1, F5b, Q4, F4, F14 | These would have the most impact if incorrect and would be the hardest to notice. A cache leak or data race would not be visible to the client, and neither would a duplicated `POST`. A parser fault (F14) is what an attacker would try first. Most of the testing is focused here: retry tests, sanitizers, boundary values, fuzzing and property-based tests. |
+| Medium | F1 to F3, F6 to F9, F13, Q1, Q2 | These would be visible if incorrect (wrong status code, a timeout that fails to fire, wrong backend) and would be reported quickly, but they would still affect all clients. They are covered by unit and system tests, pairwise tests and boundary values. |
+| Low | F11, F12, L2, L4, Q3 | These relate mainly to performance, start-up and monitoring rather than to the correctness of answers. Most failures here would be visible immediately (a bad configuration stops miniLB from starting). They are covered by basic unit and system tests and the performance report. |
 
 Out of scope, with reasons: TLS, HTTP/2, keep-alive (not implemented, see README "Known limitations").
 
@@ -72,17 +70,18 @@ with the right message; a Release build does not evaluate the condition).
 
 ## 5. Evaluation of the plan (element 2.2)
 
-> **YOUR ANALYSIS.** One short paragraph each:
->
-> - **Strengths:** what does this plan catch well?
-> - **Weaknesses and omissions:** what is not planned (e.g. real network conditions, long soak runs, multiple miniLB instances sharing Redis)?
-> - **Vulnerabilities:** what could make the plan fail (time, flaky timing-based tests, tool support for C++ mutation testing)?
-> - **Adequacy:** if every activity reaches its "Done when", which requirements would you still not trust, and why?
+**Strengths.** Several independent techniques were used, and several of them found something the others missed: coverage found untested code paths, requirements analysis found two requirements with no test (F5b, F10), boundary testing found D1, fuzzing found D2 and code review found R2. Every activity also has a clear "done when" criterion, so progress can be measured rather than estimated.
+
+**Omissions and weaknesses.** The tests do not simulate packet loss or delay over a real network. There are no long-running soak tests to detect slow leaks. There is no test of rate limiting with two miniLB instances sharing a single Redis instance, which is how it is meant to scale. The fuzzer only covers the two HTTP parsers, not the connection code around them.
+
+**Vulnerabilities.** Several system tests rely on timing, for example waiting 300 ms for a cache write before expecting a cache hit, or expecting a timeout to fire within a time window. These tests were stable over repeated runs, but they could fail on a slower or busier machine for no real reason. The full mutation run takes about 25 minutes, so it is run by hand rather than on every push.
+
+**Adequacy.** Even if every activity meets its "done when" criterion, I would not be fully confident in Q4 (thread safety), since sanitizers only observe the interleavings that occur during a test run, or in Q1 (deadlines) over a real network with packet loss and delay. Review findings R1 and R3 are also still open, so L1 and Q1 are not fully covered.
 
 ## 6. Evaluation of the instrumentation (element 2.4)
 
-> **YOUR ANALYSIS.** Questions to answer:
->
-> - Which failures would pass silently today (no log line, no counter, no assertion)?
-> - Do sanitizer builds change timing enough to hide or expose races?
-> - What would you add with more time (request IDs across log lines, latency histograms in `/stats`, structured logs)?
+**Silent failures.** The 18 assertions are compiled out of the Release build, so a broken invariant can go unnoticed in production. A backend that returns the correct status code (200) but wrong data is not detected and its answer is passed on as it is. When Redis is down, rate limiting and caching are switched off and only a log message is written, so a client can make more requests than its rate limit allows.
+
+**Timing and sanitizers.** Both sanitizers change the run time significantly: AddressSanitizer roughly doubles it, and ThreadSanitizer slows the program down many times. The change in timing can reveal races that need a slow thread, but it can also hide races that only occur when operations happen very close together. Running the tests in both a normal and a sanitizer build reduces the chance of this, but does not eliminate it.
+
+**What I would add.** A request ID on every log line, so that all lines for one request can be found under load. Latency histograms in `/stats`, so that slow requests can be identified rather than just counted. A counter for completed cache writes, so that tests can wait for the write instead of sleeping for 300 ms (review finding R6).
