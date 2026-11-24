@@ -46,6 +46,8 @@ that aborts does not write its coverage counters).
 | Fuzzing | `software-testing/fuzz/http_parser_fuzz.cpp` (libFuzzer + ASan + UBSan), `scripts/fuzz.sh`, CI job (60 s) | No crash, no sanitizer report, no broken property | Found D2 within about one second on its first run. After the fix: 2.38 million inputs in 150 s, 637 coverage points, no finding |
 | Performance with statistics | `software-testing/tools/perf_stats.py`, `06-performance-report.md` | Target (Q3, reason in `01-requirements.md` §3): three backends give at least 2.5 times the throughput of one on `/work` | Met. 8 runs: three backends give 3.07 times the throughput of one (95% CI 3.04 to 3.08); cache on is 1.16 times cache off (1.13 to 1.20); both p = 0.0002 (exact Mann-Whitney) |
 
+**Coverage targets.** The coverage targets (95% line, 88% branch) were set slightly above the starting point (94.3% line, 86.3% branch): high enough that the CI gate fails if new code arrives without tests, but below 100% because the remaining code is mostly error paths that can only be reached with fault injection, plus one branch that can never be executed.
+
 **Mutation-score target.** The target is that at least 95% of non-equivalent mutants are killed, with an explanation for each survivor. Equivalent mutants are excluded first, because a target on the raw score would count mutants that no test can ever kill. I chose 95% because below this some real faults would probably get through, while above it the race reproduction or fault injection needed to kill the last mutants would cost more than the rest of the testing. Measured: 98.1% (260 of 265), so the target is met. The verdict for every survivor is in `04-mutation-report.md`.
 
 ## 3. Defects found (yield)
@@ -103,6 +105,8 @@ that aborts does not write its coverage counters).
 **Mutation score without equivalent mutants.** 10 of the 15 surviving mutants are equivalent, meaning the change cannot be observed from outside (for example visiting the same backend twice in a loop, or rejecting bad input a few bytes earlier). Without them, 260 of 265 meaningful mutants are killed, a score of 98.1%. The remaining 5 need a race or fault injection to reach the code, or point to a missing boundary test.
 
 **Confidence in fuzzing.** The fuzzer found D2 within one second and then nothing in 2.38 million more inputs. This gives confidence that the two parsers do not crash and keep the properties written in the fuzzer. It says nothing about code outside the two parsers (connection code, concurrency, timing or Redis), and it can only check the properties I specified, so an incorrect property would not be noticed.
+
+**Reaching or exceeding the targets.** Three things are needed. The first is fault injection: toxiproxy between miniLB and the backends, dropping connections after they are opened, would exercise the untested write-failure paths and kill surviving mutant 6, and running miniLB with a low file-descriptor limit would test the retry after `accept()` fails. The second is a new boundary test: an incomplete request head 4 to 5 bytes over the limit should get 431 straight away, which kills survivor 10. The third is fixing R1 by starting a deadline before the Redis step, tested with a deliberately slow Redis. Running the performance tests on other machines would show whether the 2.5x scaling target holds beyond this one.
 
 ## 5. How to reproduce
 
