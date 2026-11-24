@@ -24,7 +24,7 @@ against in the LO4 evaluation.
 | A3 | F6 to F8, Q2 | Boundary-value tests | U | GoogleTest | Each boundary has tests at limit - 1, limit, limit + 1 | done (`BoundaryValueTest.cpp`); found defect D1, since fixed |
 | A4 | F12 and config options | Pairwise combinatorial | S | `tools/pairwise.py` + parameterised test | All 93 value pairs covered (checked by `PairwiseTable.CoversEveryPairOfValues`) | done (`PairwiseConfigTest.cpp`, 12 of 216 combinations) |
 | A5 | F4 | Model-based (health state machine) | U | GoogleTest | All 10 transitions covered; random walks agree with the model | done (`HealthStateMachineTest.cpp`) |
-| A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | Mutation score target met; survivors explained | two runs done: 91.1%, then 94.5% after new tests (`04-mutation-report.md`); target and triage of 15 survivors open |
+| A6 | Q7 | Mutation testing | U, S | `tools/mutation.py run` | At least 95% of non-equivalent mutants killed; every survivor explained | done: 91.1%, then 94.5% after new tests; 98.1% of non-equivalent mutants (`04-mutation-report.md`) |
 | A7 | F14, L1 | Fuzzing | U | libFuzzer + ASan + UBSan (`scripts/fuzz.sh`) | No crash and no broken property; seed corpus committed; 60 s in CI | done; found D2, then 2.38 million inputs clean |
 | A8 | F1 to F3, F6, F8, F14 | Property-based tests | U | RapidCheck | Properties hold for 2000 generated cases under `ctest` | done (`PropertyTest.cpp`, 10 properties) |
 | A9 | Q3 | Performance with statistics | S | wrk, `tools/perf_stats.py` | Target met with stated confidence | done: target "3 backends at least 2.5x one backend on `/work`" set in `01-requirements.md` §3; measured 3.07 (95% CI 3.04 to 3.08) |

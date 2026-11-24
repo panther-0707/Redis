@@ -1,8 +1,6 @@
 # miniLB: test results (LO3)
 
-> The numbers in this file were measured; re-run the commands in section 5 to
-> reproduce them. The sections marked **YOUR ANALYSIS** are yours to write.
-> Delete these quote blocks when you are done.
+All numbers in this file were measured; section 5 has the commands that reproduce them.
 
 ## 1. Summary
 
@@ -42,11 +40,13 @@ that aborts does not write its coverage counters).
 | Model-based (finite state machine) | `software-testing/tests/unit/HealthStateMachineTest.cpp` | All states and transitions; random walks agree with the model | Met: 10 of 10 transitions; 5 threshold pairs x 3 x 5000 random steps |
 | Dynamic analysis (sanitizers) | CI matrix | Zero reports over the whole suite | Met |
 | Assertions (instrumentation) | `MINILB_ASSERT`, 18 checks in the production code | No assertion fires in any test run; the mechanism itself is tested | Met. Mutants killed by an assertion are marked "aborted with signal 6" in the mutation reports |
-| Mutation testing | `software-testing/tools/mutation.py run`, `04-mutation-report.md` | **Target: yours to set and justify** | First run 91.1% (24 survivors). After tests for 9 survivors and the three fixes: 94.5%, 260 of 275 killed (226 by unit tests, 34 by integration tests), 15 survivors to triage |
+| Mutation testing | `software-testing/tools/mutation.py run`, `04-mutation-report.md` | At least 95% of non-equivalent mutants killed, every survivor explained (reason below the table) | First run 91.1% (24 survivors). After tests for 9 survivors and the three fixes: 94.5%, 260 of 275 killed (226 by unit tests, 34 by integration tests), 15 survivors, of which 10 are equivalent: **98.1%** of the 265 non-equivalent mutants killed. Target met |
 | Seeded faults | `software-testing/tools/mutation.py seeded`, CI job "Seeded faults are caught" | Every seeded fault makes a test fail | Met: 10 of 10 |
 | Property-based testing | `software-testing/tests/unit/PropertyTest.cpp` (RapidCheck) | Each property holds for 2000 generated cases under `ctest` | Met: 10 properties. Checked against a known defect: with the D1 fix removed, the fragmentation property fails after 2310 cases and shrinks to "head of exactly the limit, split inside the blank line" |
 | Fuzzing | `software-testing/fuzz/http_parser_fuzz.cpp` (libFuzzer + ASan + UBSan), `scripts/fuzz.sh`, CI job (60 s) | No crash, no sanitizer report, no broken property | Found D2 within about one second on its first run. After the fix: 2.38 million inputs in 150 s, 637 coverage points, no finding |
 | Performance with statistics | `software-testing/tools/perf_stats.py`, `06-performance-report.md` | Target (Q3, reason in `01-requirements.md` §3): three backends give at least 2.5 times the throughput of one on `/work` | Met. 8 runs: three backends give 3.07 times the throughput of one (95% CI 3.04 to 3.08); cache on is 1.16 times cache off (1.13 to 1.20); both p = 0.0002 (exact Mann-Whitney) |
+
+**Mutation-score target.** The target is that at least 95% of non-equivalent mutants are killed, with an explanation for each survivor. Equivalent mutants are excluded first, because a target on the raw score would count mutants that no test can ever kill. I chose 95% because below this some real faults would probably get through, while above it the race reproduction or fault injection needed to kill the last mutants would cost more than the rest of the testing. Measured: 98.1% (260 of 265), so the target is met. The verdict for every survivor is in `04-mutation-report.md`.
 
 ## 3. Defects found (yield)
 
@@ -60,7 +60,7 @@ that aborts does not write its coverage counters).
 - **Status:** fixed, test-first. Commit `1b8bf88` enables the test (it fails there); commit `ec79b88` changes `HttpParser::feed` so that both checks apply the same limit (the test passes). A second test checks that a head one byte over the limit still ends in `431` for every split point.
 - **Why the original suite missed it:** its oversize tests use heads far above the limit, and its fragmentation tests use heads far below it. Line and branch coverage of the code involved was already 100%.
 
-> **YOUR ANALYSIS:** what does D1 say about coverage as an adequacy criterion?
+**What D1 says about coverage.** D1 was in code that already had 100% line and branch coverage, but it had never been tested with the input that mattered. The parser's size check had been executed many times, but only with request heads far below or far above the limit, never exactly on the limit and split at the wrong place. Code coverage shows which lines have been executed, not whether they have been executed with the relevant inputs. It is useful for finding code that has not been tested at all, but not for deciding when testing is complete.
 
 ### D2: bytes after the end of a response counted towards the response size cap
 
@@ -90,14 +90,19 @@ that aborts does not write its coverage counters).
 | `src/balancer/WeightedRoundRobin.cpp:30` | Fallback `return` after the loop | Unreachable while every weight is >= 1 (enforced by `Backend` and `Config`); now guarded by an assertion | Nothing: infeasible path, kept to satisfy the compiler |
 | `include/miniLB/util/Assert.hpp:26-31` | The abort handler of `MINILB_ASSERT` | Runs only in death tests, whose process aborts before coverage counters are written | Nothing: tested by `AssertionDeathTest.*`, invisible to gcov |
 
-> **YOUR ANALYSIS (element 3.4):** evaluate the results. Questions to answer:
->
-> - Coverage went from 86.3% to 92.6% of branches. Which of the remaining 88 branches matter, and which are the second half of a condition that cannot happen?
-> - The pairwise suite uses 12 of 216 combinations. Which kinds of fault can it not find (three-way interactions)? Is there a three-way interaction in miniLB you would worry about?
-> - The model-based test compares against a model you wrote. What if the model has the same mistake as the code?
-> - Three defects were found: one each by boundary testing, fuzzing and review, none by the 132 original tests or by coverage. What does that say about relying on one technique?
-> - The mutation score is 94.5% with 15 survivors. How many of them are equivalent mutants, and what is the score once those are removed?
-> - The fuzzer found D2 in a second but nothing in the following 2.38 million inputs. How much confidence does that give, and what could it still not find (anything outside the two parsers)?
+### Evaluation of the results (element 3.4)
+
+**Unreached branches.** 84 of the 1,201 branches are never taken, about half of them in `Connection.cpp`. Many are the second half of an error path, for example a socket write failing after a successful connect, `accept()` failing because the process has run out of file descriptors, or a write failing during a health check. These matter because they are the paths miniLB takes when something goes wrong, but they can only be reached with fault injection. One of them, the fallback `return` at the end of `WeightedRoundRobin::select`, can never be reached because every weight is at least 1.
+
+**Pairwise testing.** Every pair of setting values is tested together, but not every combination of three settings, so a fault that only occurs with a specific combination of three would not be detected. One thing that concerns me is that none of the 12 rows produces a cache hit: the only row with the cache on, Redis running and a `GET` request also has all backends down. This means a cache hit together with rate limiting, or with a dead backend, is never tested.
+
+**Errors in the model.** The state-machine model was written from the same description in `Backend.hpp` that the code follows. If I had misunderstood that description, the model and the code would agree and the test would still pass. R2 shows this: the model had no event for "a request succeeded", so code review found a fault that the model-based test could not.
+
+**One technique is not enough.** None of the three faults was found by the 132 original tests or by coverage. Each was found by a different technique: D1 by boundary testing, D2 by fuzzing and R2 by code review. With only one technique, two of the three faults would have stayed in the code.
+
+**Mutation score without equivalent mutants.** 10 of the 15 surviving mutants are equivalent, meaning the change cannot be observed from outside (for example visiting the same backend twice in a loop, or rejecting bad input a few bytes earlier). Without them, 260 of 265 meaningful mutants are killed, a score of 98.1%. The remaining 5 need a race or fault injection to reach the code, or point to a missing boundary test.
+
+**Confidence in fuzzing.** The fuzzer found D2 within one second and then nothing in 2.38 million more inputs. This gives confidence that the two parsers do not crash and keep the properties written in the fuzzer. It says nothing about code outside the two parsers (connection code, concurrency, timing or Redis), and it can only check the properties I specified, so an incorrect property would not be noticed.
 
 ## 5. How to reproduce
 
